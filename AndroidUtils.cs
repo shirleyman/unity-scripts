@@ -14,21 +14,36 @@ namespace OrbitalNine.Editor
         [MenuItem("Tools/Android/Build and Run", false, MENU_START_INDEX)]
         private static void BuildAndRun()
         {
-            string result = Build(false, true, false) ? "succeeded." : "falsed.";
+            Utils.ClearLog();
+            Stopwatch timer = Stopwatch.StartNew();
+            bool succeeded = (Build(false, true, false));
+            timer.Stop();
+            TimeSpan elapsed = timer.Elapsed;
+            string result = succeeded ? "succeeded (" + string.Format("{0:D2}:{1:D2}:{2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds)  + ").": "failed.";
             UnityEngine.Debug.Log("Android build and run " + result);
         }
 
         [MenuItem("Tools/Android/Build and Run (Debug)", false, MENU_START_INDEX + 1)]
         private static void BuildAndRunDebug()
         {
-            string result = Build(true, true, false) ? "succeeded." : "failed.";
+            Utils.ClearLog();
+            Stopwatch timer = Stopwatch.StartNew();
+            bool succeeded = Build(true, true, false);
+            timer.Stop();
+            TimeSpan elapsed = timer.Elapsed;
+            string result = succeeded ? "succeeded (" + string.Format("{0:D2}:{1:D2}:{2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds) + ")." : "failed.";
             UnityEngine.Debug.Log("Android debug build and run " + result);
         }
 
         [MenuItem("Tools/Android/Build and Profile", false, MENU_START_INDEX + 2)]
         private static void BuildAndProfile()
         {
-            string result = Build(true, true, true) ? "succeeded." : "failed.";
+            Utils.ClearLog();
+            Stopwatch timer = Stopwatch.StartNew();
+            bool succeeded = Build(true, true, true);
+            timer.Stop();
+            TimeSpan elapsed = timer.Elapsed;
+            string result = succeeded ? "succeeded (" + string.Format("{0:D2}:{1:D2}:{2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds) + ")." : "failed.";
             UnityEngine.Debug.Log("Android build and profile " + result);
         }
 

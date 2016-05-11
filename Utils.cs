@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -38,6 +39,17 @@ namespace OrbitalNine.Editor
                 buildOps |= BuildOptions.ConnectWithProfiler;
             }
             return buildOps;
+        }
+
+        /// <summary>
+        /// Clears console log in editor.
+        /// </summary>
+        internal static void ClearLog()
+        {
+            var assembly = Assembly.GetAssembly(typeof(UnityEditor.ActiveEditorTracker));
+            var type = assembly.GetType("UnityEditorInternal.LogEntries");
+            var method = type.GetMethod("Clear");
+            method.Invoke(new object(), null);
         }
     }
 }
