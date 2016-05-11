@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -13,22 +14,25 @@ namespace OrbitalNine.Editor
         [MenuItem("Tools/Android/Build and Run", false, MENU_START_INDEX)]
         private static void BuildAndRun()
         {
-            Build(false, true, false);
+            string result = Build(false, true, false) ? "succeeded." : "falsed.";
+            UnityEngine.Debug.Log("Android build and run " + result);
         }
 
         [MenuItem("Tools/Android/Build and Run (Debug)", false, MENU_START_INDEX + 1)]
         private static void BuildAndRunDebug()
         {
-            Build(true, true, false);
+            string result = Build(true, true, false) ? "succeeded." : "failed.";
+            UnityEngine.Debug.Log("Android debug build and run " + result);
         }
 
         [MenuItem("Tools/Android/Build and Profile", false, MENU_START_INDEX + 2)]
         private static void BuildAndProfile()
         {
-            Build(true, true, true);
+            string result = Build(true, true, true) ? "succeeded." : "failed.";
+            UnityEngine.Debug.Log("Android build and profile " + result);
         }
 
-        private static void Build(bool isDebug, bool runPlayer, bool attachProfiler)
+        private static bool Build(bool isDebug, bool runPlayer, bool attachProfiler)
         {
             string[] scenePaths = Utils.GetScenePaths();
             string apkPath = EditorUserBuildSettings.GetBuildLocation(BuildTarget.Android);
@@ -41,8 +45,17 @@ namespace OrbitalNine.Editor
             if (!string.IsNullOrEmpty(apkPath))
             {
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.Android);
-                BuildPipeline.BuildPlayer(scenePaths, apkPath, BuildTarget.Android, Utils.GetBuildOptions(isDebug, false, runPlayer, attachProfiler)); 
+                string result = BuildPipeline.BuildPlayer(scenePaths, apkPath, BuildTarget.Android, Utils.GetBuildOptions(isDebug, false, runPlayer, attachProfiler));
+                if (string.IsNullOrEmpty(result))
+                {
+                    if (runPlayer)
+                    {
+                        TurnScreenOn();
+                    }
+                    return true;
+                }                
             }
+            return false;
         }
 
         [MenuItem("Tools/Android/Deploy APK...", false, MENU_START_INDEX + 100)]
@@ -52,7 +65,17 @@ namespace OrbitalNine.Editor
             string apkPath = EditorUtility.OpenFilePanel("Select APK", lastAPK, "apk");
             if (!string.IsNullOrEmpty(apkPath))
             {
-                RunProcess(ADB_PATH, "-d install -r " + apkPath);
+                Process proc = RunProcess(ADB_PATH, "-d install -r " + apkPath);
+                string error = proc.StandardError.ReadToEnd();
+                if (string.IsNullOrEmpty(error))
+                {
+                    TurnScreenOn();
+                    UnityEngine.Debug.Log("APK file deployed.");
+                }
+                else
+                {
+                    UnityEngine.Debug.LogError(error);
+                }
             }
         }
 
@@ -60,14 +83,42 @@ namespace OrbitalNine.Editor
         public static void LaunchAndroid()
         {
             string appid = PlayerSettings.bundleIdentifier;
-            RunProcess(ADB_PATH, "shell am force-stop " + appid).WaitForExit();
-            RunProcess(ADB_PATH, "shell am start -n " + appid + "/com.unity3d.player.UnityPlayerNativeActivity");
+            TurnScreenOn();
+            Process proc = RunProcess(ADB_PATH, "shell am force-stop " + appid);
+            proc.WaitForExit();
+            string error = proc.StandardError.ReadToEnd();
+            if (!string.IsNullOrEmpty(error))
+            {
+                UnityEngine.Debug.LogError(error);
+            }
+            else
+            { 
+                proc = RunProcess(ADB_PATH, "shell am start -n " + appid + "/com.unity3d.player.UnityPlayerNativeActivity");
+                error = proc.StandardError.ReadToEnd();
+                if (!string.IsNullOrEmpty(error))
+                {
+                    UnityEngine.Debug.LogError(error);
+                }
+                else
+                {
+                    UnityEngine.Debug.Log("APK launched on device.");
+                }
+            }
         }
 
         [MenuItem("Tools/Android/Open Log Window...", false, MENU_START_INDEX + 200)]
         private static void LaunchADBLog()
         {
-            RunProcess(ADB_PATH, "logcat -s Unity");
+            Process proc = RunProcess(ADB_PATH, "logcat -s Unity", true);
+            string error = proc.StandardError.ReadToEnd();
+            if (string.IsNullOrEmpty(error))
+            {
+                UnityEngine.Debug.Log("ADB logcat started");
+            }
+            else
+            {
+                UnityEngine.Debug.LogError(error);
+            }
         }
 
         [MenuItem("Tools/Android/Open Log Window...", true)]
@@ -76,20 +127,59 @@ namespace OrbitalNine.Editor
             return Application.platform == RuntimePlatform.WindowsEditor;
         }
 
-        private static System.Diagnostics.Process RunProcess(string fullPath, string arguments = "")
+        [MenuItem("Tools/Android/Restart ADB Server", false, MENU_START_INDEX + 201)]
+        private static void RestartADBServer()
         {
-            System.Diagnostics.Process proc = new System.Diagnostics.Process();
+            Process proc = RunProcess(ADB_PATH, "kill-server");
+            proc.WaitForExit();
+            string error = proc.StandardError.ReadToEnd();
+            if (string.IsNullOrEmpty(error))
+            {
+                proc = RunProcess(ADB_PATH, "start-server");
+                if (string.IsNullOrEmpty(error))
+                {
+                    UnityEngine.Debug.Log("ADB server restarted.");
+                }
+                else
+                {
+                    UnityEngine.Debug.LogError(error);
+                }
+            }
+            else
+            {
+                UnityEngine.Debug.LogError(error);
+            }
+        }
+
+        private static Process RunProcess(string fullPath, string arguments = "", bool popupWindow = false)
+        {
+            Process proc = new Process();
             try
             {
                 proc.StartInfo.FileName = fullPath;
                 proc.StartInfo.Arguments = arguments;
+                proc.StartInfo.UseShellExecute = popupWindow;
+                proc.StartInfo.CreateNoWindow = !popupWindow;
+                proc.StartInfo.RedirectStandardOutput = !popupWindow;
+                proc.StartInfo.RedirectStandardError = !popupWindow;
                 proc.Start();
             }
             catch (Exception e)
             {
-                Debug.LogError(e.Message);
+                UnityEngine.Debug.LogError(e.Message);
             }
             return proc;
+        }
+
+        private static void TurnScreenOn()
+        {
+            Process proc = RunProcess(ADB_PATH, "shell dumpsys input_method | grep mScreenOn");
+            string output = proc.StandardOutput.ReadToEnd();
+            if (output.Contains("mScreenOn=false"))
+            {
+                RunProcess(ADB_PATH, "shell input keyevent 26").WaitForExit(); // power button
+            }
+            RunProcess(ADB_PATH, "shell input keyevent 82"); // unlock screen
         }
     }
 }
