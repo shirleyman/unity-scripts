@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,13 +10,7 @@ namespace OrbitalNine.Editor
     {
         internal static string[] GetScenePaths()
         {
-            EditorBuildSettingsScene[] scenes = EditorBuildSettings.scenes;
-            string[] scenePaths = new string[scenes.Length];
-            for (int i = 0; i < scenePaths.Length; i++)
-            {
-                scenePaths[i] = scenes[i].path;
-            }
-            return scenePaths;
+            return EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
         }
 
         internal static BuildOptions GetBuildOptions(bool isDebug, bool showPlayer, bool runPlayer, bool attachProfiler)
