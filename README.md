@@ -1,6 +1,9 @@
 # unity-scripts
 A collection of handy Unity scripts.
 
+### AndroidPreloadSigning:
+* Autofill Android publishing settings.
+
 ### AndroidUtils: 
 * Build and Run shortcuts for doing release, debug and profile builds. Screen is turned on and unlocked automatically on run.
 * Deploy apk to device without re-triggering the build.
