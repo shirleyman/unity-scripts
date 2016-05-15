@@ -1,5 +1,5 @@
 # unity-scripts
-A collection of handy Unity scripts.
+A collection of handy Unity scripts used to build Brain It On.
 
 ### AndroidPreloadSigning:
 * Autofill Android publishing settings.
