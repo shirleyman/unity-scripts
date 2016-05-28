@@ -19,8 +19,14 @@ namespace OrbitalNine.Editor
             bool succeeded = (Build(false, true, false));
             timer.Stop();
             TimeSpan elapsed = timer.Elapsed;
-            string result = succeeded ? "succeeded (" + string.Format("{0:D2}:{1:D2}:{2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds)  + ").": "failed.";
-            UnityEngine.Debug.Log("Android build and run " + result);
+            if (succeeded)
+            {
+                UnityEngine.Debug.Log("Android build and run succeeded(" + string.Format("{ 0:D2}:{ 1:D2}:{ 2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds) + ").");
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("Android build and run failed.");
+            }
         }
 
         [MenuItem("Tools/Android/Build and Run (Debug)", false, MENU_START_INDEX + 1)]
@@ -31,8 +37,14 @@ namespace OrbitalNine.Editor
             bool succeeded = Build(true, true, false);
             timer.Stop();
             TimeSpan elapsed = timer.Elapsed;
-            string result = succeeded ? "succeeded (" + string.Format("{0:D2}:{1:D2}:{2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds) + ")." : "failed.";
-            UnityEngine.Debug.Log("Android debug build and run " + result);
+            if (succeeded)
+            {
+                UnityEngine.Debug.Log("Android debug build and run succeeded(" + string.Format("{ 0:D2}:{ 1:D2}:{ 2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds) + ").");
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("Android debug build and run failed.");
+            }
         }
 
         [MenuItem("Tools/Android/Build and Profile", false, MENU_START_INDEX + 2)]
@@ -43,8 +55,14 @@ namespace OrbitalNine.Editor
             bool succeeded = Build(true, true, true);
             timer.Stop();
             TimeSpan elapsed = timer.Elapsed;
-            string result = succeeded ? "succeeded (" + string.Format("{0:D2}:{1:D2}:{2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds) + ")." : "failed.";
-            UnityEngine.Debug.Log("Android build and profile " + result);
+            if (succeeded)
+            {
+                UnityEngine.Debug.Log("Android build and profile succeeded(" + string.Format("{ 0:D2}:{ 1:D2}:{ 2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds) + ").");
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("Android build and profile failed.");
+            }
         }
 
         private static bool Build(bool isDebug, bool runPlayer, bool attachProfiler)
