@@ -1,6 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 using System.IO;
+using System;
 
 namespace OrbitalNine.Editor
 {
@@ -11,19 +12,37 @@ namespace OrbitalNine.Editor
         [MenuItem("Tools/iOS/Build and Run (IL2CPP)", false, MENU_START_INDEX)]
         private static void BuildAndRunRelease()
         {
-            Build(false, false, true);
+            Utils.ClearLog();
+            System.Diagnostics.Stopwatch timer = System.Diagnostics.Stopwatch.StartNew();
+            bool succeeded = Build(false, ScriptingImplementation.IL2CPP, false, true, false);
+            timer.Stop();
+            TimeSpan elapsed = timer.Elapsed;
+            string result = succeeded ? "succeeded (" + string.Format("{0:D2}:{1:D2}:{2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds) + ")." : "failed.";
+            UnityEngine.Debug.Log("iOS build and run (IL2CPP release) " + result);
         }
 
         [MenuItem("Tools/iOS/Build and Run (Mono Debug)", false, MENU_START_INDEX + 1)]
         private static void BuildAndRunMonoDebug()
-        {
-            Build(true, false, true);
+        { 
+            Utils.ClearLog();
+            System.Diagnostics.Stopwatch timer = System.Diagnostics.Stopwatch.StartNew();
+            bool succeeded = Build(true, ScriptingImplementation.Mono2x, false, true, false);
+            timer.Stop();
+            TimeSpan elapsed = timer.Elapsed;
+            string result = succeeded ? "succeeded (" + string.Format("{0:D2}:{1:D2}:{2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds) + ")." : "failed.";
+            UnityEngine.Debug.Log("iOS build and run (Mono debug) " + result);
         }
 
-        [MenuItem("Tools/iOS/Generate XCode Project", false, MENU_START_INDEX + 100)]
+        [MenuItem("Tools/iOS/Generate XCode Project (IL2CPP)", false, MENU_START_INDEX + 100)]
         private static void GenerateXCodeProject()
         {
-            Build(false, false, false);
+            Utils.ClearLog();
+            System.Diagnostics.Stopwatch timer = System.Diagnostics.Stopwatch.StartNew();
+            bool succeeded = Build(false, ScriptingImplementation.IL2CPP, false, false, false);
+            timer.Stop();
+            TimeSpan elapsed = timer.Elapsed;
+            string result = succeeded ? "succeeded (" + string.Format("{0:D2}:{1:D2}:{2:D2}", elapsed.Hours, elapsed.Minutes, timer.Elapsed.Seconds) + ")." : "failed.";
+            UnityEngine.Debug.Log("iOS Generate XCode Project " + result);
         }
 
         //        [MenuItem("Tools/iOS/Clear XCode Project Files", false, MENU_START_INDEX + 200)]
@@ -43,7 +62,7 @@ namespace OrbitalNine.Editor
             }
         }
 
-        private static void Build(bool isDebug, bool isAppend, bool openInXcode, bool attachProfiler = false)
+        private static bool Build(bool isDebug, ScriptingImplementation scriptingBackend = ScriptingImplementation.IL2CPP, bool isAppend = false, bool openInXcode = true, bool attachProfiler = false)
         {
             string[] scenePaths = Utils.GetScenePaths();
             string projPath = EditorUserBuildSettings.GetBuildLocation(BuildTarget.iOS);
@@ -56,17 +75,24 @@ namespace OrbitalNine.Editor
             if (!string.IsNullOrEmpty(projPath))
             {
                 BuildOptions buildOps = Utils.GetBuildOptions(isDebug, !openInXcode, openInXcode, attachProfiler);
-                if (!isDebug)
-                {
-                    buildOps |= BuildOptions.Il2CPP;
-                }
                 if (isAppend)
                 {
                     buildOps |= BuildOptions.AcceptExternalModificationsToPlayer;
                 }
+                if (scriptingBackend == ScriptingImplementation.IL2CPP)
+                {
+                    buildOps |= BuildOptions.Il2CPP;
+                }
+                PlayerSettings.SetPropertyInt("ScriptingBackend", (int)scriptingBackend, BuildTargetGroup.iOS);
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.iOS);
-                BuildPipeline.BuildPlayer(scenePaths, projPath, BuildTarget.iOS, buildOps); 
+                string result = BuildPipeline.BuildPlayer(scenePaths, projPath, BuildTarget.iOS, buildOps); 
+                if (string.IsNullOrEmpty(result))
+                {
+                    return true;
+                }
+                Debug.LogError(result);
             }
+            return false;
         }
 
         [MenuItem("Tools/iOS/Build and Run (IL2CPP)", true)]
